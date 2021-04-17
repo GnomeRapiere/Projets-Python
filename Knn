@@ -1,0 +1,77 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Apr 17 20:56:41 2021
+
+@author: jeanc
+"""
+
+import random
+
+class Iris:
+    
+    def __init__(self,sL,sW,pL,pW,label):
+        self.sL = sL
+        self.sW = sW
+        self.pL = pL
+        self.pW = pW
+        self.label = label
+
+
+    def distance(self,iris):
+        return ( ((self.sL - iris.sL)**2) + ((self.sW - iris.sW)**2) + ((self.pL - iris.pL)**2) + ((self.pW - iris.pW)**2) )
+    
+    def knn(self,pop,k):
+        kProches = sorted(pop,key = lambda s:s.distance(self))[:k]
+        classes = {}
+        for iris in kProches:
+            classes[iris.label] = classes[iris.label] + 1 if iris.label in classes else 1
+        return max(classes, key = lambda i:classes[i])
+
+
+def recupDonnees(fichier):
+    pop = []
+    with open(fichier, 'r') as f:
+        for ligne in f.readlines():
+            l = [float(i) for i in ligne.split(',')[:-1]]
+            l.append(ligne.strip().split(',')[-1])
+            pop.append(Iris(*l))
+    return pop
+
+def resultat(pop,k):
+    index= random.randrange(len(pop))
+    iris=pop.pop(index)
+    label=iris.knn(pop,k)
+    return label, iris.label
+
+def matConf(pop,k):
+    taux=0
+    matrice={"Iris-setosa":{"Iris-setosa":0,"Iris-versicolor":0,"Iris-virginica":0},
+             "Iris-versicolor":{"Iris-setosa":0,"Iris-versicolor":0,"Iris-virginica":0},
+             "Iris-virginica":{"Iris-setosa":0,"Iris-versicolor":0,"Iris-virginica":0}}
+    for i in range(len(pop)):
+        pop2=pop[:]
+        iris=pop2.pop(i)
+        label=iris.knn(pop2,k)
+        matrice[iris.label][label]+=1
+        if iris.label==label:
+            taux+=1
+        taux=round((taux/len(pop))*100,1)
+        return matrice,taux
+
+def affichage(matrice):
+    labels='__','Seto','Vers','Virg'
+    print(labels,sep='|')
+    i=1
+    for ligne in matrice.values():
+        print(labels[i],end='|')
+        i+=1
+        for n in ligne.values():
+            print((4-len(str(n)))*' ',n,end='|',sep='')
+        print()
+
+pop=recupDonnees(r'C:\Users\jeanc\Downloads\iris.data')
+for k in range(1,50):
+    matrice,taux=matConf(pop,k)
+    print(f'k={k}:{taux}% de reussite')
+    affichage(matrice)
+    print()
